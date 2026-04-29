@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 테크개발본부 SI 프로젝트 대시보드 </title>
+    <style>
+        /* 기본 레이아웃 및 폰트 설정 */
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            --white: #ffffff;
+            --blue: #3b82f6;
+            --emerald: #10b981;
+            --indigo: #6366f1;
+            --orange: #f97316;
+            --red: #ef4444;
+            --gold: #eab308;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: "KB금융 본문체", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 20px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* 헤더 스타일 */
+        header { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            margin-bottom: 30px; 
+            padding-bottom: 20px; 
+            border-bottom: 1px solid var(--border-color); 
+        }
+        @media (min-width: 768px) {
+            header { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+        }
+        .header-title h1 { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-top: 5px; }
+        .header-title .sub-tag { color: var(--blue); font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+
+        /* 필터 버튼 */
+        .filter-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .filter-btn { 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
+            border: 1px solid var(--border-color);
+            background: var(--white);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn:hover { background: #f1f5f9; }
+        .filter-btn.active { background: #1e293b; color: white; border-color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+        /* 통계 카드 */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 30px; 
+        }
+        .stat-card { 
+            background: var(--white); 
+            padding: 20px; 
+            border-radius: 16px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .stat-card .label { font-size: 0.85rem; color: var(--text-sub); display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .stat-card .value { font-size: 1.5rem; font-weight: bold; }
+        .stat-card .desc { font-size: 0.75rem; margin-top: 5px; font-weight: 600; }
+
+        /* 간트 차트 */
+        .gantt-container { 
+            background: var(--white); 
+            border-radius: 20px; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+        .gantt-header { 
+            padding: 20px; 
+            background: #f8fafc; 
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .gantt-header h2 { font-size: 1.1rem; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .legend { display: flex; gap: 15px; font-size: 0.75rem; color: var(--text-sub); font-weight: 600; }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        .gantt-scroll { overflow-x: auto; padding: 20px; }
+        .gantt-content { min-width: 900px; }
+        
+        .timeline-header { display: grid; grid-template-columns: 280px 1fr; margin-bottom: 15px; }
+        .month-grid { display: grid; grid-template-columns: repeat(12, 1fr); border-left: 1px solid #f1f5f9; }
+        .month-name { text-align: center; font-size: 0.75rem; font-weight: bold; color: var(--text-sub); }
+
+        .gantt-row { display: grid; grid-template-columns: 280px 1fr; align-items: center; padding: 8px 0; border-radius: 8px; transition: background 0.2s; }
+        .gantt-row:hover { background: #f8fafc; }
+        .project-info { padding-left: 10px; overflow: hidden; }
+        .dept-tag { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 3px; }
+        .project-name { font-size: 0.85rem; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .project-meta { font-size: 0.7rem; color: var(--text-sub); font-weight: 600; display: flex; gap: 10px; }
+        .meta-budget { color: var(--gold); font-weight: 800; }
+
+        .bar-area { display: grid; grid-template-columns: repeat(12, 1fr); position: relative; height: 28px; border-left: 1px solid #f1f5f9; }
+        .grid-line { border-right: 1px solid #f1f5f9; height: 100%; }
+        .bar { 
+            position: absolute; 
+            top: 4px; 
+            bottom: 4px; 
+            border-radius: 20px; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
+            transition: all 0.4s ease-out; 
+        }
+        .milestone { 
+            position: absolute; 
+            right: -5px; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            background: white; 
+            border: 2px solid var(--red); 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-size: 9px; 
+            font-weight: 800; 
+            color: var(--red); 
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            white-space: nowrap;
+        }
+
+        /* 카드 그리드 */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .project-card { 
+            background: white; 
+            border-radius: 16px; 
+            border: 1px solid var(--border-color); 
+            padding: 20px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-left: 4px solid #cbd5e1;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .project-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+        .card-title { font-weight: bold; font-size: 1rem; margin-bottom: 10px; height: 3rem; overflow: hidden; }
+        .card-phases { background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.75rem; color: #475569; font-weight: 600; margin-bottom: 15px; display: flex; gap: 8px; }
+        .card-footer { border-top: 1px solid #f1f5f9; padding-top: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .open-date { font-size: 0.7rem; font-weight: 800; color: #334155; display: flex; align-items: center; gap: 5px; }
+        .card-budget { font-size: 0.75rem; font-weight: 800; color: var(--gold); background: #fefce8; padding: 2px 8px; border-radius: 10px; border: 1px solid #fef08a; }
+
+        /* 부서별 색상 정의 */
+        .color-global { background-color: var(--blue); color: white; }
+        .color-global-light { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+        .color-mgmt { background-color: var(--emerald); color: white; }
+        .color-mgmt-light { background-color: #ecfdf5; color: #047857; border: 1px solid #d1fae5; }
+        .color-deposit { background-color: var(--indigo); color: white; }
+        .color-deposit-light { background-color: #eef2ff; color: #4338ca; border: 1px solid #e0e7ff; }
+        .color-loan { background-color: var(--orange); color: white; }
+        .color-loan-light { background-color: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+
+        footer { text-align: center; margin-top: 50px; color: var(--text-sub); font-size: 0.8rem; padding-bottom: 30px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <div class="sub-tag">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                    <span>SI Project Dashboard</span>
+                </div>
+                <h1>2026 테크개발본부 SI 프로젝트 일정 </h1>
+            </div>
+            <div id="filter-container" class="filter-group">
+                <!-- Buttons added by JS -->
+            </div>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    전체 프로젝트
+                </div>
+                <div class="value" id="stat-count">0개 건</div>
+                <div class="desc" style="color: var(--blue);">디지털 전환 가속화</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+                    총 투입 예산 규모
+                </div>
+                <div class="value" id="stat-budget" style="color: var(--gold);">0.0억</div>
+                <div class="desc" style="color: var(--gold);">본부 SI 총 사업비 (추정)</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    상반기 오픈 과제
+                </div>
+                <div class="value" style="color: var(--emerald);">4개 과제</div>
+                <div class="desc" style="color: var(--emerald);">2Q 집중 오픈 예정</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    투입 인력 총계
+                </div>
+                <div class="value" style="color: var(--indigo);">2,700+ M/M</div>
+                <div class="desc" style="color: var(--indigo);">핵심 전문 인력 집중</div>
+            </div>
+        </div>
+
+        <!-- Gantt -->
+        <div class="gantt-container">
+            <div class="gantt-header">
+                <h2> 통합 개발 로드맵 (일정 및 예산 현황)</h2>
+                <div class="legend">
+                    <div class="legend-item"><div class="dot" style="background: var(--blue);"></div> 글로벌</div>
+                    <div class="legend-item"><div class="dot" style="background: var(--emerald);"></div> 경영정보</div>
+                    <div class="legend-item"><div class="dot" style="background: var(--indigo);"></div> 수신</div>
+                    <div class="legend-item"><div class="dot" style="background: var(--orange);"></div> 여신</div>
+                </div>
+            </div>
+            <div class="gantt-scroll">
+                <div class="gantt-content">
+                    <div class="timeline-header">
+                        <div></div>
+                        <div id="month-header" class="month-grid"></div>
+                    </div>
+                    <div id="gantt-rows"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards -->
+        <div id="card-grid" class="card-grid"></div>
+
+        <footer>
+            © 2026 Tech Development HQ. [오프라인 모드] 본 페이지는 인터넷 연결 없이도 모든 기능이 작동합니다.
+        </footer>
+    </div>
+
+    <script>
+        const projects = [
+            { id: 1, dept: '글로벌IT개발부', name: '인니중간지주 시스템 구축', start: 1, end: 12, open: '27.1', mm: '365 M/M', budget: 36.5, phases: '선정/계약(1-3) -> 분석/설계(4-7) -> 개발(8-11) -> 테스트(12)' },
+            { id: 2, dept: '글로벌IT개발부', name: 'Napas 2.0 구축', start: 4, end: 12, open: '26.12', mm: '40.5 M/M', budget: 4.1, phases: '분석/설계(4-5) -> 개발(6-10) -> 테스트(11-12)' },
+            { id: 3, dept: '글로벌IT개발부', name: 'KB프라삭 GSU', start: 2, end: 10, open: '26.10', mm: '4.5 M/M', budget: 0.5, phases: '개발/테스트(2-3) -> 분석/설계(4-5) -> 개발(6-8) -> 테스트(9-10)' },
+            { id: 4, dept: '경영정보개발부', name: '구매관리시스템 재구축', start: 1, end: 5, open: '26.5', mm: '20 M/M', budget: 2.0, phases: '개발/단위테스트(1-2) -> 통합테스트/이행(3-4) -> 안정화(5)' },
+            { id: 5, dept: '경영정보개발부', name: 'KB와이즈넷 리뉴얼', start: 8, end: 12, open: '27.1', mm: '70 M/M', budget: 7.0, phases: '업체선정/계약(8-10) -> 착수예정(11) -> 요건정의/설계(12)' },
+            { id: 6, dept: '경영정보개발부', name: '보이스피싱 피해예측 모니터링 고도화', start: 5, end: 12, open: '26.12', mm: '40 M/M', budget: 4.0, phases: '분석/설계(5-6) -> 구현(7-9) -> 테스트(10-11) -> 이행/안정화(12)' },
+            { id: 7, dept: '경영정보개발부', name: '준법/자금세탁방지시스템 재구축', start: 1, end: 5, open: '26.5', mm: '56 M/M', budget: 5.6, phases: '개발/단위테스트(1-2) -> 통합테스트/이행(3-4) -> 안정화(5)' },
+            { id: 8, dept: '경영정보개발부', name: '정보계(ADW) 노후자원 교체 재구축', start: 7, end: 12, open: '27.1', mm: '3.8 M/M', budget: 0.4, phases: '요건정의/설계(7-8) -> 개발/테스트(9-11) -> 안정화(12)' },
+            { id: 9, dept: '수신IT개발부', name: '디지털 영사인증 금융위임장', start: 1, end: 6, open: '26.6', mm: '2 M/M', budget: 0.2, phases: '요건정의/설계(4-5) -> 개발/테스트(5-6) -> 안정화/고도화(7-8)' },
+            { id: 10, dept: '수신IT개발부', name: '역외 원화결제 시스템 구축', start: 5, end: 10, open: '26.10', mm: '18 M/M', budget: 1.8, phases: '요건정의/설계(5-6) -> 개발/테스트(7-8) -> 통합테스트(9)' },
+            { id: 11, dept: '수신IT개발부', name: '외국납부세액 및 연금저축 고도화', start: 6, end: 12, open: '26.12', mm: '6 M/M', budget: 0.6, phases: '요건정의/설계(6-8) -> 개발/테스트(9-11) -> 안정화(12)' },
+            { id: 12, dept: '여신IT개발부', name: 'SWIFT ISO20022 MX전문 개편', start: 1, end: 4, open: '26.4', mm: '24 M/M', budget: 2.4, phases: '개발/테스트/적용(1-3) -> 안정화(4)' },
+            { id: 13, dept: '여신IT개발부', name: 'SPM 시스템 U2L 및 성능개선', start: 5, end: 8, open: '26.8', mm: '8 M/M', budget: 0.8, phases: '요건정의/설계(5-6) -> 개발/테스트(6-7) -> 안정화(8)' },
+            { id: 14, dept: '여신IT개발부', name: '개인여신 플랫폼 재구축', start: 1, end: 10, open: '26.10.06', mm: '648 M/M', budget: 64.8, phases: '설계(1-2) -> 개발(3-6) -> 테스트(7-9) -> 안정화(10)' },
+            { id: 15, dept: '여신IT개발부', name: '코어뱅킹 현대화 2단계', start: 7, end: 12, open: '진행중', mm: '1,360 M/M', budget: 136.0, phases: '분석 및 설계(7-11) -> 개발 및 단위테스트(12~)' },
+        ];
+
+        let currentFilter = '전체';
+        const depts = ['전체', '글로벌IT개발부', '경영정보개발부', '수신IT개발부', '여신IT개발부'];
+
+        function getStyleSet(dept) {
+            if(dept.includes('글로벌')) return { main: 'color-global', light: 'color-global-light', hex: '#3b82f6' };
+            if(dept.includes('경영정보')) return { main: 'color-mgmt', light: 'color-mgmt-light', hex: '#10b981' };
+            if(dept.includes('수신')) return { main: 'color-deposit', light: 'color-deposit-light', hex: '#6366f1' };
+            if(dept.includes('여신')) return { main: 'color-loan', light: 'color-loan-light', hex: '#f97316' };
+            return { main: '', light: '', hex: '#64748b' };
+        }
+
+        function renderDashboard() {
+            const filtered = currentFilter === '전체' ? projects : projects.filter(p => p.dept === currentFilter);
+            
+            // 통계 업데이트
+            document.getElementById('stat-count').innerText = `${filtered.length}개 건`;
+            const totalBudget = filtered.reduce((acc, curr) => acc + curr.budget, 0);
+            document.getElementById('stat-budget').innerText = `${totalBudget.toFixed(1)}억`;
+
+            // 1. Month Header
+            const mHeader = document.getElementById('month-header');
+            mHeader.innerHTML = Array.from({length: 12}, (_, i) => `<div class="month-name">${i+1}월</div>`).join('');
+
+            // 2. Gantt Rows
+            const ganttRows = document.getElementById('gantt-rows');
+            ganttRows.innerHTML = filtered.map(p => {
+                const styles = getStyleSet(p.dept);
+                const startX = ((p.start - 1) / 12) * 100;
+                const widthX = ((p.end - p.start + 1) / 12) * 100;
+
+                return `
+                    <div class="gantt-row">
+                        <div class="project-info">
+                            <span class="dept-tag ${styles.light}">${p.dept}</span>
+                            <div class="project-name">${p.name}</div>
+                            <div class="project-meta">
+                                <span>${p.mm}</span>
+                                <span class="meta-budget">₩ ${p.budget.toFixed(1)}억</span>
+                            </div>
+                        </div>
+                        <div class="bar-area">
+                            ${Array.from({length: 12}, () => `<div class="grid-line"></div>`).join('')}
+                            <div class="bar ${styles.main}" style="left: ${startX}%; width: ${widthX}%">
+                                ${p.open !== '진행중' ? `<div class="milestone">${p.open}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 3. Project Cards
+            const cardGrid = document.getElementById('card-grid');
+            cardGrid.innerHTML = filtered.map(p => {
+                const styles = getStyleSet(p.dept);
+                return `
+                    <div class="project-card" style="border-left-color: ${styles.hex}">
+                        <div class="card-header">
+                            <span class="dept-tag ${styles.light}">${p.dept}</span>
+                            <span class="card-budget">₩ ${p.budget.toFixed(1)}억</span>
+                        </div>
+                        <div class="card-title">${p.name}</div>
+                        <div class="card-phases">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-top:2px; flex-shrink:0;"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                            ${p.phases}
+                        </div>
+                        <div class="card-footer">
+                            <div class="open-date">
+                                <div class="dot" style="background: var(--red);"></div> 
+                                오픈 예정: ${p.open}
+                            </div>
+                            <span class="project-mm" style="font-size: 0.65rem;">${p.mm}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderFilters() {
+            const container = document.getElementById('filter-container');
+            container.innerHTML = depts.map(dept => `
+                <button class="filter-btn ${currentFilter === dept ? 'active' : ''}" 
+                        onclick="setFilter('${dept}')">${dept}</button>
+            `).join('');
+        }
+
+        function setFilter(dept) {
+            currentFilter = dept;
+            renderFilters();
+            renderDashboard();
+        }
+
+        window.onload = () => {
+            renderFilters();
+            renderDashboard();
+        }
+    </script>
+</body>
+</html>
